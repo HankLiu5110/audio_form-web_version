@@ -1,0 +1,72 @@
+:root{
+  --bg:#F7F9FC; --card:#fff; --border:#E5E7EB; --text:#1f2937;
+  --primary:#2563EB; --primary-hover:#1E40AF; --muted:#9CA3AF;
+  --ok:#10B981; --warn:#F59E0B; --bad:#EF4444;
+
+  /* 這兩個是你會調整的重點 */
+  --video-pos-x: 50%;   /* 0% 左、100% 右 */
+  --video-pos-y: 60%;   /* 0% 上、100% 下（越大越貼近底部） */
+  --video-scale: 0.96;  /* 0.90 ~ 1.00 建議範圍 */
+}
+
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 "Microsoft JhengHei","PingFang TC",system-ui,sans-serif}
+.title{font-size:26px;font-weight:600;margin:16px 12px}
+.page{display:none;padding:8px 12px 16px}
+.page.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:16px}
+label{display:block;margin:8px 0 4px}
+input[type=text],select{width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:8px;background:#fff}
+button{border:none;border-radius:10px;padding:12px 18px;background:var(--primary);color:#fff;cursor:pointer}
+button.secondary{background:#334155}
+button:disabled{background:var(--muted);cursor:not-allowed}
+button:hover:not(:disabled){background:var(--primary-hover)}
+.row{display:flex;gap:10px;align-items:center;margin-top:12px}
+.spacer{flex:1}
+.preview{display:flex;align-items:center;justify-content:center;min-height:320px}
+#preview{width:100%;max-width:720px;border-radius:12px;background:#000}
+
+.subtitle{font-size:30px;font-weight:600;margin:0px 0px 0px}
+
+/* 影片容器 */
+.videoCard{padding:0; margin-top: 0; /* 也可以控制這裡 */}
+.videoWrap{
+  position:relative;
+  height:90vh;
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+}
+
+/* 影片：可調位置 + 縮放 */
+#qVideo{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  object-position: var(--video-pos-x) var(--video-pos-y); /* ← 調這個就能抓到想看的上下位置 */
+  transform: scale(var(--video-scale));                   /* ← 覺得被切太緊就縮小一點 */
+  transform-origin:center bottom;
+  background:#000;
+}
+
+.bottomBar{margin-top:8px}
+.hidden{display:none}
+
+.meter{position:relative;height:18px;border-radius:8px;background:#E5E7EB;overflow:hidden}
+.meter #micBar{height:100%;width:0%;background:var(--ok)}
+
+/* 微型調整器（可選） */
+.tuner { display:flex; gap:8px; align-items:center; font-size:12px; }
+.tuner input[type=range]{ width:140px; }
+
+.vad-status {
+  font-size: 18px;
+  padding: 0 12px;
+  color: var(--muted);
+  transition: color 0.3s;
+}
+
+.vad-status.speaking {
+  color: var(--ok);
+}

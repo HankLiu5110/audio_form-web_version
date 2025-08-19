@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>語音問卷系統（Web）</title>
+  <link rel="icon" type="image/png" href="app_icon_custom.ico" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Configure ONNX Runtime before it loads -->
+  <script>
+    window.ort = {
+      env: {
+        wasm: {
+          numThreads: 1
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.0/dist/ort.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.9/dist/bundle.min.js"></script>
+</head>
+<body>
+  <main id="app">
+
+    <!-- 設定頁 -->
+    <section id="setup" class="page active">
+      <h1 class="title">問卷系統 - 設定</h1>
+
+      <div class="card grid">
+        <div class="form">
+          <label>使用者代號：</label>
+          <input id="userId" type="text" placeholder="輸入代號..." />
+
+          <label>選擇攝影機：</label>
+          <select id="cameraSelect"></select>
+
+          <label>選擇麥克風：</label>
+          <select id="micSelect"></select>
+
+          <label>麥克風音量：</label>
+          <div class="meter"><div id="micBar"></div></div>
+
+          <div class="row">
+            <button id="refreshBtn" class="secondary">重新整理裝置</button>
+            <div class="spacer"></div>
+            <button id="startBtn">開始問卷</button>
+          </div>
+        </div>
+
+        <div class="preview card">
+          <video id="preview" autoplay playsinline muted></video>
+        </div>
+      </div>
+    </section>
+
+    <!-- 問卷頁 -->
+    <section id="quiz" class="page">
+      <div id="subtitle" class="subtitle"></div>
+
+      <div class="card videoCard">
+        <div class="videoWrap">
+          <video id="qVideo" playsinline></video>
+        </div>
+      </div>
+
+      <div class="row bottomBar">
+        <div id="vadStatus" class="vad-status"></div>
+        <div class="spacer"></div>
+        <button id="nextBtn" disabled>下一題</button>
+      </div>
+
+      <div id="finish" class="finish hidden">
+        <h2>全部完成！</h2>
+        <div id="downloads"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 題庫：可離線（file://） -->
+  <script id="manifest-inline" type="application/json">
+  {
+    "intro": {
+      "video": "quiz/intro/video.mp4",
+      "text": "擔心癌症復發，在癌症病友上是非常常見的現象，他不只影響癌友本人，也會影響家庭，或影響每天的生活。"
+    },
+    "questions": [
+      { "id": 1, "video": "quiz/1/video.mp4", "text": "請你用兩分鐘簡單描述一下你最近的生活，最近都在做些什麼？", "wait": 5 },
+      { "id": 2, "video": "quiz/2/video.mp4", "text": "請問你會擔心癌症復發嗎？一分不會、十分非常嚴重，你覺得你有幾分？", "wait": 5 },
+      { "id": 3, "video": "quiz/3/video.mp4", "text": "你多常想到復發這件事？", "wait": 5 },
+      { "id": 4, "video": "quiz/4/video.mp4", "text": "你想到的時候感覺如何？想到時會影響日常生活嗎？生活中有哪些狀況會讓你擔心？", "wait": 5 },
+      { "id": 5, "video": "quiz/5/video.mp4", "text": "有其他家人可以幫助你嗎？有其他人可以幫助你嗎？醫療團隊可以如何幫助你呢？你希望醫療團隊可以提供哪些幫忙？", "wait": 5 },
+      { "id": 6, "video": "quiz/6/video.mp4", "text": "你擔心的時候通常會如何處理？通常怎麼做對你有幫助，或哪些是沒有幫助？", "wait": 5 }
+    ]
+  }
+  </script>
+
+  <!-- 先載 jszip，再載主程式 -->
+  <script src="lib/jszip.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
