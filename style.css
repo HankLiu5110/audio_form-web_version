@@ -61,7 +61,8 @@ button:hover:not(:disabled){background:var(--primary-hover)}
 .tuner input[type=range]{ width:140px; }
 
 .vad-status {
-  font-size: 18px;
+  font-size: 24px;
+  font-weight: bold;
   padding: 0 12px;
   color: var(--muted);
   transition: color 0.3s;
