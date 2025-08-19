@@ -6,7 +6,6 @@
   <title>語音問卷系統（Web）</title>
   <link rel="icon" type="image/png" href="app_icon_custom.ico" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Configure ONNX Runtime before it loads -->
   <script>
     window.ort = {
       env: {
@@ -22,7 +21,6 @@
 <body>
   <main id="app">
 
-    <!-- 設定頁 -->
     <section id="setup" class="page active">
       <h1 class="title">問卷系統 - 設定</h1>
 
@@ -53,7 +51,6 @@
       </div>
     </section>
 
-    <!-- 問卷頁 -->
     <section id="quiz" class="page">
       <div id="subtitle" class="subtitle"></div>
 
@@ -63,12 +60,13 @@
         </div>
       </div>
 
-      <div class="row bottomBar">
-        <div id="vadStatus" class="vad-status"></div>
+      <div class="row bottomBar" style="position: relative;">
         <div class="spacer"></div>
+        
+        <div id="vadStatus" class="vad-status" style="position: absolute; left: 50%; transform: translateX(-50%);"></div>
+        
         <button id="nextBtn" disabled>下一題</button>
       </div>
-
       <div id="finish" class="finish hidden">
         <h2>全部完成！</h2>
         <div id="downloads"></div>
@@ -77,7 +75,6 @@
 
   </main>
 
-  <!-- 題庫：可離線（file://） -->
   <script id="manifest-inline" type="application/json">
   {
     "intro": {
@@ -95,7 +92,6 @@
   }
   </script>
 
-  <!-- 先載 jszip，再載主程式 -->
   <script src="lib/jszip.min.js"></script>
   <script src="main.js"></script>
 </body>

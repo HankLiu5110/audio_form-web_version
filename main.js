@@ -73,7 +73,10 @@
   }
 
   async function startPreview(){
-    stopPreview();
+    // (1) 先停止所有預覽、串流、以及舊的 VAD 實例
+    await stopPreview();
+
+    // (2) 請求一次性的媒體權限，並獲取串流
     const camId = els.camSel.value || undefined;
     const micId = els.micSel.value || undefined;
     S.stream = await navigator.mediaDevices.getUserMedia({
@@ -82,7 +85,7 @@
     });
     els.prev.srcObject = S.stream;
 
-    // Mic 電平
+    // Mic 電平分析儀
     const AC = new (window.AudioContext || window.webkitAudioContext)();
     const src = AC.createMediaStreamSource(S.stream);
     const analyser = AC.createAnalyser();
@@ -99,12 +102,45 @@
       S.rafId = requestAnimationFrame(loop);
     })();
 
+    // (3) 在此處，一次性地建立 VAD 實例，並讓它處於待命狀態
+    try {
+      const audioTracks = S.stream.getAudioTracks();
+      if (audioTracks.length === 0) throw new Error("找不到音訊軌道");
+      const audioStreamForVAD = new MediaStream(audioTracks);
+
+      S.vad = await vad.MicVAD.new({
+        stream: audioStreamForVAD,
+        onSpeechStart: () => {
+          S.isSpeaking = true;
+          S.speechStartTs = Date.now();
+          setVadStatus('speaking');
+        },
+        onSpeechEnd: () => {
+          const durationMs = Date.now() - S.speechStartTs;
+          S.speechDuration += durationMs;
+          S.isSpeaking = false;
+          setVadStatus('idle');
+        },
+      });
+    } catch(err) {
+      console.error("VAD 初始化失敗:", err);
+      alert("語音偵測 (VAD) 初始化失敗。\n錄影錄音仍可繼續，但無法使用說話時長判斷功能。");
+      S.vad = null;
+    }
+
     try { await enumerateDevices(); } catch {}
   }
 
-  function stopPreview(){
+  async function stopPreview(){
     if (S.rafId) cancelAnimationFrame(S.rafId);
     S.rafId = 0; setMicBar(0);
+
+    // 當停止預覽時，也一併銷毀 VAD 實例
+    if (S.vad) {
+      S.vad.destroy();
+      S.vad = null;
+    }
+
     if (S.stream){
       S.stream.getTracks().forEach(t => t.stop());
       S.stream = null;
@@ -154,9 +190,34 @@
     }
   }
 
+  function setVadStatus(mode) {
+   if (!els.vadStatus) return;
+   switch (mode) {
+     case 'speaking':
+       els.vadStatus.textContent = '回答中...';
+       els.vadStatus.style.color = '#3B82F6';
+       els.vadStatus.style.visibility = 'visible';
+       break;
+     case 'idle':
+       els.vadStatus.textContent = '請再多回答一點';
+       els.vadStatus.style.color = '#EF4444';
+       els.vadStatus.style.visibility = 'visible';
+       break;
+     case 'completed':
+       els.vadStatus.textContent = '若回答完畢請進行下一題';
+       els.vadStatus.style.color = '#22C55E';
+       els.vadStatus.style.visibility = 'visible';
+       break;
+     default:
+       els.vadStatus.textContent = '';
+       els.vadStatus.style.visibility = 'hidden';
+   }
+ }
+
   function unlockNext(){
     if (S.waitTimer){ clearInterval(S.waitTimer); S.waitTimer = null; }
-    if (S.vad) { S.vad.pause(); S.vad = null; }
+    // 暫停 VAD，而不是銷毀它
+    if (S.vad) { S.vad.pause(); }
     S.waitLeft = 0;
     els.nextBtn.disabled = false;
     els.nextBtn.textContent = '下一題';
@@ -169,8 +230,9 @@
     els.subtitle.textContent = q.text || '';
     els.finish.classList.add('hidden');
     els.nextBtn.disabled = true;
+    setVadStatus('hidden');
 
-    // New flow: Play video, then start recording and VAD onended.
+    // 影片播放完畢後的回呼
     els.qVideo.onended = async () => {
       await startRecording(q.id);
       
@@ -178,28 +240,14 @@
       S.waitLeft = requiredSpeechSecs;
 
       if (requiredSpeechSecs > 0) {
-        // VAD logic
+        setVadStatus('idle');
         S.speechDuration = 0;
         S.isSpeaking = false;
         els.nextBtn.textContent = `請說話... (0/${requiredSpeechSecs}s)`;
 
-        if (S.vad) { S.vad.pause(); }
-        
-        try {
-          S.vad = await vad.MicVAD.new({
-            stream: S.stream,
-            onSpeechStart: () => {
-              S.isSpeaking = true;
-              S.speechStartTs = Date.now();
-            },
-            onSpeechEnd: () => {
-              const durationMs = Date.now() - S.speechStartTs;
-              S.speechDuration += durationMs;
-              S.isSpeaking = false;
-            },
-          });
-          S.vad.start();
-
+        // (4) 在需要時，直接啟動已經建立好的 VAD 實例
+        if (S.vad) {
+          S.vad.start(); // <-- 不再是 .new()，而是 .start()
           S.waitTimer = setInterval(() => {
             let currentDuration = S.speechDuration;
             if (S.isSpeaking) {
@@ -208,14 +256,14 @@
             const currentDurationSecs = Math.floor(currentDuration / 1000);
 
             if (currentDurationSecs >= requiredSpeechSecs) {
+              setVadStatus('completed');
               unlockNext();
             } else {
               els.nextBtn.textContent = `請說話... (${currentDurationSecs}/${requiredSpeechSecs}s)`;
             }
           }, 250);
-        } catch (e) {
-          console.error("VAD failed to start", e);
-          // Fallback to simple timer if VAD fails
+        } else {
+          // 如果 VAD 初始化失敗，則退回到簡易計時器模式
           S.waitTimer = setInterval(()=> {
             S.waitLeft--;
             if (S.waitLeft<=0){ unlockNext(); }
@@ -270,7 +318,6 @@
     els.downloads.appendChild(wrap);
   }
 
-  // —— 這裡把 zip 功能放進同一作用域（可離線下載到「預設下載資料夾」）
   async function zipAllAndDownload() {
     if (!S.outputs.length) return;
     const zip = new JSZip();
@@ -278,7 +325,7 @@
     const zipName = `${user}_${ts()}.zip`;
 
     S.outputs.forEach(out=>{
-      const name = out.filename.replace(/\.webm$/i, '.mp4'); // 檔名改 .mp4（容器實為 webm）
+      const name = out.filename.replace(/\.webm$/i, '.mp4');
       zip.file(name, out.blob);
     });
 
@@ -295,24 +342,25 @@
   }
 
   async function finish(){
-    if (S.vad) { S.vad.pause(); S.vad = null; }
+    if (S.vad) { S.vad.pause(); }
     if (S.waitTimer) { clearInterval(S.waitTimer); S.waitTimer = null; }
     
     els.subtitle.textContent = '問卷結束';
     els.finish.classList.remove('hidden');
     els.nextBtn.disabled = true;
+    setVadStatus('hidden');
 
     try { await zipAllAndDownload(); }
     catch(err){ alert('打包下載失敗：\n' + err.message); }
 
-    // 回首頁 & 重置並保留預覽
     setTimeout(async ()=>{
       els.quiz.classList.remove('active');
       els.setup.classList.add('active');
       S.outputs = [];
       els.downloads.innerHTML = '';
       S.qIndex = -1;
-      try{ await enumerateDevices(); await startPreview(); }catch{}
+      // 回到設定頁後，重新建立預覽和 VAD
+      try{ await startPreview(); }catch{}
     }, 500);
   }
 
@@ -320,13 +368,13 @@
   els.startBtn.addEventListener('click', async ()=>{
     if (!els.userId.value.trim()){ alert('請輸入使用者代號'); return; }
     try{
-      if (!S.stream) await startPreview(); // 只有沒串流才要權限，避免第二次彈窗
+      if (!S.stream) await startPreview();
       await startQuiz();
     }catch(err){ alert('啟動失敗：\n' + err.message); }
   });
 
   els.refreshBtn.addEventListener('click', async ()=>{
-    await enumerateDevices(); await startPreview();
+    await startPreview(); // 重新整理會觸發 stopPreview -> startPreview，完整重建 VAD
   });
 
   els.nextBtn.addEventListener('click', ()=>{
@@ -341,7 +389,7 @@
     try{ await startPreview(); }catch(e){
       alert('請允許相機與麥克風以開始預覽：\n'+e.message); return;
     }
-    try{ await enumerateDevices(); }catch{}
+    // `enumerateDevices` is now called inside `startPreview`
+    setVadStatus('hidden');
   })();
 })();
-
