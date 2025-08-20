@@ -44,5 +44,5 @@
 
 ### 20250820 設定黑色介面
 
-![image]()
-![image]()
+![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/change-to-dark-mode_setting_page.png)
+![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/change-to-dark-mode_question_page.png)
