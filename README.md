@@ -32,12 +32,12 @@
 
 3.當開始回答時，若還沒達到設定的時間會在畫面下方提示"請再多回答一點"
 
-![image](image\請再回答一點.png)
+![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/%E8%AB%8B%E5%86%8D%E5%9B%9E%E7%AD%94%E4%B8%80%E9%BB%9E.png)
 
 4.當開始回答時，若偵測到使用者正在回答中會在畫面下方提示"回答中..."，該題回答秒數也會同步增加
 
-![image](image\回答中.png)
+![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/%E5%9B%9E%E7%AD%94%E4%B8%AD.png)
 
 5.當開始回答時，若達到設定的回答時間後會在畫面下方提示"若回答完畢可以進行下一題"，下一題的按鈕也會同時點亮
 
-![image](image\若回答完畢可以進行下一題.png)
+![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/%E8%8B%A5%E5%9B%9E%E7%AD%94%E5%AE%8C%E7%95%A2%E5%8F%AF%E4%BB%A5%E9%80%B2%E8%A1%8C%E4%B8%8B%E4%B8%80%E9%A1%8C.png)
