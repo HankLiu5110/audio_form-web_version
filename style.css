@@ -1,73 +1,255 @@
-:root{
-  --bg:#000; --card:#2b2b2b; --border:#434343d3; --text:#ffffff;
-  --primary:#2563EB; --primary-hover:#1E40AF; --muted:#9CA3AF;
-  --ok:#10B981; --warn:#F59E0B; --bad:#EF4444;
-
-  /* 這兩個是你會調整的重點 */
-  --video-pos-x: 50%;   /* 0% 左、100% 右 */
-  --video-pos-y: 50%;   /* 0% 上、100% 下（越大越貼近底部） */
-  --video-scale: 1.0;  /* 0.90 ~ 1.00 建議範圍 */
+/* ==================================
+ * 基礎與變數設定
+ * ================================== */
+:root {
+  --bg: #000000; /* 深色背景 */
+  --card: #000000; /* 卡片背景 */
+  --border: #374151; /* 邊框顏色 */
+  --text: #F9FAFB; /* 主要文字顏色 */
+  --primary: #3B82F6; /* 主色調 */
+  --primary-hover: #2563EB; /* 主色調懸停 */
+  --muted: #6B7280; /* 較暗的文字 */
+  --ok: #10B981;
+  --warn: #F59E0B;
+  --bad: #EF4444;
 }
 
-*{box-sizing:border-box} html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 "Microsoft JhengHei","PingFang TC",system-ui,sans-serif}
-.title{font-size:26px;font-weight:600;margin:16px 12px}
-.page{display:none;padding:8px 12px 16px}
-.page.active{display:block}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
-.grid{display:grid;grid-template-columns:360px 1fr;gap:16px}
-label{display:block;margin:8px 0 4px}
-input[type=text],select{width:100%;padding:8px 10px;border:1px solid #D1D5DB;border-radius:8px;background:#fff}
-button{border:none;border-radius:10px;padding:12px 18px;background:var(--primary);color:#fff;cursor:pointer}
-button.secondary{background:#334155}
-button:disabled{background:var(--muted);cursor:not-allowed}
-button:hover:not(:disabled){background:var(--primary-hover)}
-.row{display:flex;gap:10px;align-items:center;margin-top:12px}
-.spacer{flex:1}
-.preview{display:flex;align-items:center;justify-content:center;min-height:320px}
-#preview{width:100%;max-width:720px;border-radius:12px;background:#000}
-
-.subtitle{font-size:30px;font-weight:600;margin:0px 0px 0px}
-
-/* 影片容器 */
-.videoCard{padding:0; margin-top: 0; /* 也可以控制這裡 */}
-.videoWrap{
-  position:relative;
-  height:90vh;
-  border-radius:12px;
-  overflow:hidden;
-  background:#000;
+/* ==================================
+ * 全域與版面重設 (Layout Reset)
+ * ================================== */
+* {
+  box-sizing: border-box;
 }
 
-/* 影片：可調位置 + 縮放 */
-#qVideo{
-  position:absolute ; inset:0;
-  width: 100%; height: 100%;
-  object-fit:contain ;
-  object-position: var(--video-pos-x) var(--video-pos-y); /* ← 調這個就能抓到想看的上下位置 */
-  transform: scale(var(--video-scale));                   /* ← 覺得被切太緊就縮小一點 */
-  transform-origin:center bottom;
-  background:#000;
+html, body {
+  height: 100%; /* 確保 html 和 body 都佔滿完整高度 */
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* 禁用整個頁面的捲動 */
 }
 
-.bottomBar{margin-top:8px}
-.hidden{display:none}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+  display: flex; /* 將 body 設為 Flex 容器 */
+  flex-direction: column;
+}
 
-.meter{position:relative;height:18px;border-radius:8px;background:#E5E7EB;overflow:hidden}
-.meter #micBar{height:100%;width:0%;background:var(--ok)}
+/* [核心修改 1]
+ * 讓 <main id="app"> 成為一個能填滿 body 的 Flex 容器 */
+main#app {
+  flex: 1; /* 讓 app 元素自動成長，填滿 body 的所有剩餘空間 */
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* 關鍵：允許子元素在空間不足時正確縮小，而不是溢出 */
+}
 
-/* 微型調整器（可選） */
-.tuner { display:flex; gap:8px; align-items:center; font-size:12px; }
-.tuner input[type=range]{ width:140px; }
 
-.vad-status {
-  font-size: 24px;
+/* ==================================
+ * 頁面與卡片結構
+ * ================================== */
+.page {
+  display: none; /* 預設隱藏 */
+  padding: 8px 12px 16px;
+}
+
+.page.active {
+  flex: 1; /* 讓當前頁面填滿 #app 的剩餘空間 */
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* 在子元素之間增加一點間距 */
+  min-height: 0;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0; /* 移除預設 margin，由父層 gap 管理 */
+  padding: 8px 0;
+  flex-shrink: 0; /* 不讓標題被壓縮 */
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+
+/* ==================================
+ * 設定頁 (#setup) 專用樣式
+ * ================================== */
+.grid {
+  flex: 1; /* 讓 grid 填滿頁面空間 */
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  grid-template-rows: 1fr; /* 讓唯一的橫列填滿所有垂直高度 */
+  gap: 16px;
+  min-height: 0;
+}
+
+/* [核心修改 2]
+ * 讓表單和預覽區塊能正確處理內容溢出 */
+.grid .form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto; /* 如果表單內容過多，在此區塊內部產生捲動條 */
+}
+
+.grid .preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 移除固定的 min-height，讓它由 grid 的 1fr 控制 */
+  min-height: 0;
+}
+
+#preview {
+  width: 100%;
+  height: 100%; /* 讓影像填滿可用空間 */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* 保持影像比例，完整顯示 */
+  border-radius: 8px;
+  background: #000;
+}
+
+
+/* ==================================
+ * 問卷頁 (#quiz) 專用樣式
+ * ================================== */
+.subtitle {
+  font-size: 30px;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.videoCard {
+  flex: 1; /* 讓影片卡片填滿中間的主要空間 */
+  min-height: 0;
+  padding: 0;
+  display: flex;
+}
+
+.videoWrap {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+#qVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* 確保影片比例正確，不會被裁切 */
+}
+
+.bottomBar {
+  flex-shrink: 0; /* 不讓底部按鈕列被壓縮 */
+}
+
+.finish.hidden {
+  display: none;
+}
+.finish {
+  text-align: center;
+}
+#downloads {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+}
+
+
+/* ==================================
+ * 通用元件 (Form, Button, etc.)
+ * ================================== */
+label {
+  display: block;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+input[type=text],
+select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+button.secondary {
+  background: var(--muted);
+}
+
+button:disabled {
+  background: #4B5563;
+  color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: auto; /* 將按鈕推到底部 */
+  padding-top: 16px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.meter {
+  position: relative;
+  height: 18px;
+  border-radius: 8px;
+  background: #374151;
+  overflow: hidden;
+}
+
+.meter #micBar {
+  height: 100%;
+  width: 0%;
+  background: var(--ok);
+  transition: width 0.1s, background-color 0.5s;
+}
+
+#vadStatus {
+  font-size: 20px;
   font-weight: bold;
   padding: 0 12px;
   color: var(--muted);
-  transition: color 0.3s;
+  transition: color 0.3s, opacity 0.3s;
+  visibility: hidden;
+  opacity: 0;
 }
-
-.vad-status.speaking {
-  color: var(--ok);
+#vadStatus[style*="visible"] {
+  visibility: visible;
+  opacity: 1;
 }
