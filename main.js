@@ -15,6 +15,7 @@
     finish:     document.getElementById('finish'),
     downloads:  document.getElementById('downloads'),
     vadStatus:  document.getElementById('vadStatus'),
+    nursePrompt:document.getElementById('nursePrompt'),
   };
 
   const S = {
@@ -29,11 +30,15 @@
     qIndex: -1,
     waitTimer: null,
     waitLeft: 0,
-    outputs: [], // {filename, blob}
+    outputs: [], 
     vad: null,
     isSpeaking: false,
     speechStartTs: 0,
-    speechDuration: 0, // in ms
+    speechDuration: 0, 
+    thinkTimer: null,
+    promptAudio: null,
+    voicePrompts: [],
+    originalSubtitle: '',
   };
 
   // ---------- 工具 ----------
@@ -73,10 +78,8 @@
   }
 
   async function startPreview(){
-    // (1) 先停止所有預覽、串流、以及舊的 VAD 實例
     await stopPreview();
 
-    // (2) 請求一次性的媒體權限，並獲取串流
     const camId = els.camSel.value || undefined;
     const micId = els.micSel.value || undefined;
     S.stream = await navigator.mediaDevices.getUserMedia({
@@ -85,7 +88,6 @@
     });
     els.prev.srcObject = S.stream;
 
-    // Mic 電平分析儀
     const AC = new (window.AudioContext || window.webkitAudioContext)();
     const src = AC.createMediaStreamSource(S.stream);
     const analyser = AC.createAnalyser();
@@ -102,7 +104,6 @@
       S.rafId = requestAnimationFrame(loop);
     })();
 
-    // (3) 在此處，一次性地建立 VAD 實例，並讓它處於待命狀態
     try {
       const audioTracks = S.stream.getAudioTracks();
       if (audioTracks.length === 0) throw new Error("找不到音訊軌道");
@@ -114,6 +115,7 @@
           S.isSpeaking = true;
           S.speechStartTs = Date.now();
           setVadStatus('speaking');
+          startOrResetThinkTimer();
         },
         onSpeechEnd: () => {
           const durationMs = Date.now() - S.speechStartTs;
@@ -135,7 +137,6 @@
     if (S.rafId) cancelAnimationFrame(S.rafId);
     S.rafId = 0; setMicBar(0);
 
-    // 當停止預覽時，也一併銷毀 VAD 實例
     if (S.vad) {
       S.vad.destroy();
       S.vad = null;
@@ -146,6 +147,99 @@
       S.stream = null;
     }
     els.prev.srcObject = null;
+  }
+  
+  // ---------- 語音提示功能 ----------
+  async function loadVoicePrompts() {
+    const NUM_PROMPTS = 6;
+    const promises = [];
+    for (let i = 1; i <= NUM_PROMPTS; i++) {
+      const audioPath = `./voice_prompts/voice_prompt${i}.wav`;
+      const textPath = `./voice_prompts/voice_prompt${i}.txt`;
+      
+      const textPromise = fetch(textPath)
+        .then(res => {
+          if (!res.ok) throw new Error(`無法載入 ${textPath}`);
+          return res.text();
+        })
+        .then(text => ({ audio: audioPath, text: text.trim() }))
+        .catch(err => {
+          console.warn(err.message);
+          return null;
+        });
+      promises.push(textPromise);
+    }
+    
+    const results = await Promise.all(promises);
+    S.voicePrompts = results.filter(p => p !== null);
+    
+    if (S.voicePrompts.length === 0) {
+        console.warn("沒有成功載入任何語音提示檔，此功能將被停用。");
+    }
+  }
+
+  function stopThinkTimer() {
+    if (S.thinkTimer) clearTimeout(S.thinkTimer);
+    S.thinkTimer = null;
+  
+    els.nursePrompt.classList.remove('visible');
+    if (S.promptAudio && !S.promptAudio.paused) {
+      S.promptAudio.pause();
+      S.promptAudio.currentTime = 0;
+    }
+    if (S.originalSubtitle) {
+      els.subtitle.textContent = S.originalSubtitle;
+      S.originalSubtitle = '';
+    }
+  }
+
+  async function playRandomPrompt() {
+    if (S.qIndex < 0 || S.qIndex >= S.questions.length) return;
+    const q = S.questions[S.qIndex];
+    let currentDuration = S.speechDuration;
+    if (S.isSpeaking) {
+      currentDuration += Date.now() - S.speechStartTs;
+    }
+    const currentDurationSecs = Math.floor(currentDuration / 1000);
+    if (q.answer_time > 0 && currentDurationSecs >= q.answer_time) {
+      return;
+    }
+
+    if (S.voicePrompts.length === 0 || !S.promptAudio.paused) return;
+  
+    if (S.vad) S.vad.pause();
+    
+    const prompt = S.voicePrompts[Math.floor(Math.random() * S.voicePrompts.length)];
+    
+    S.originalSubtitle = els.subtitle.textContent;
+    els.subtitle.textContent = prompt.text;
+    els.nursePrompt.classList.add('visible');
+    
+    S.promptAudio.src = prompt.audio;
+    try {
+      await S.promptAudio.play();
+      S.promptAudio.onended = () => {
+        if (S.vad) S.vad.start();
+        stopThinkTimer();
+        startOrResetThinkTimer();
+      };
+    } catch (err) {
+      console.error("播放語音提示失敗:", err);
+      if (S.vad) S.vad.start();
+      stopThinkTimer();
+    }
+  }
+
+  function startOrResetThinkTimer() {
+    stopThinkTimer();
+  
+    if (S.qIndex < 0 || S.qIndex >= S.questions.length) return;
+    const q = S.questions[S.qIndex];
+    const thinkTimeMs = Number(q.think_time || 0) * 1000;
+    
+    if (thinkTimeMs > 0) {
+      S.thinkTimer = setTimeout(playRandomPrompt, thinkTimeMs);
+    }
   }
 
   // ---------- 題庫 ----------
@@ -178,7 +272,8 @@
       id:   q.id ?? (i+1),
       video:q.video,
       text: q.text || `題目 ${q.id ?? (i+1)}`,
-      wait: Number(q.wait||0)|0
+      answer_time: Number(q.answer_time||0)|0,
+      think_time: Number(q.think_time||0)|0
     }));
 
     if (intro && intro.video){
@@ -216,7 +311,6 @@
 
   function unlockNext(){
     if (S.waitTimer){ clearInterval(S.waitTimer); S.waitTimer = null; }
-    // 暫停 VAD，而不是銷毀它
     if (S.vad) { S.vad.pause(); }
     S.waitLeft = 0;
     els.nextBtn.disabled = false;
@@ -224,6 +318,7 @@
   }
 
   async function showQuestion(i){
+    stopThinkTimer();
     if (i >= S.questions.length){ await finish(); return; }
     S.qIndex = i;
     const q = S.questions[i];
@@ -232,11 +327,11 @@
     els.nextBtn.disabled = true;
     setVadStatus('hidden');
 
-    // 影片播放完畢後的回呼
     els.qVideo.onended = async () => {
       await startRecording(q.id);
+      startOrResetThinkTimer();
       
-      const requiredSpeechSecs = Math.max(0, Number(q.wait||0)|0);
+      const requiredSpeechSecs = Math.max(0, Number(q.answer_time||0)|0);
       S.waitLeft = requiredSpeechSecs;
 
       if (requiredSpeechSecs > 0) {
@@ -245,9 +340,8 @@
         S.isSpeaking = false;
         els.nextBtn.textContent = `請說話... (0/${requiredSpeechSecs}s)`;
 
-        // (4) 在需要時，直接啟動已經建立好的 VAD 實例
         if (S.vad) {
-          S.vad.start(); // <-- 不再是 .new()，而是 .start()
+          S.vad.start();
           S.waitTimer = setInterval(() => {
             let currentDuration = S.speechDuration;
             if (S.isSpeaking) {
@@ -263,7 +357,6 @@
             }
           }, 250);
         } else {
-          // 如果 VAD 初始化失敗，則退回到簡易計時器模式
           S.waitTimer = setInterval(()=> {
             S.waitLeft--;
             if (S.waitLeft<=0){ unlockNext(); }
@@ -342,6 +435,7 @@
   }
 
   async function finish(){
+    stopThinkTimer();
     if (S.vad) { S.vad.pause(); }
     if (S.waitTimer) { clearInterval(S.waitTimer); S.waitTimer = null; }
     
@@ -359,7 +453,6 @@
       S.outputs = [];
       els.downloads.innerHTML = '';
       S.qIndex = -1;
-      // 回到設定頁後，重新建立預覽和 VAD
       try{ await startPreview(); }catch{}
     }, 500);
   }
@@ -374,22 +467,28 @@
   });
 
   els.refreshBtn.addEventListener('click', async ()=>{
-    await startPreview(); // 重新整理會觸發 stopPreview -> startPreview，完整重建 VAD
+    await startPreview();
   });
 
   els.nextBtn.addEventListener('click', ()=>{
     if (els.nextBtn.disabled) return;
+    stopThinkTimer();
     stopRecording();
     showQuestion(S.qIndex+1);
   });
 
-  // ---------- 初始化：進頁就開預覽（只跳一次權限）
+  // ---------- 初始化 ----------
   (async function init(){
+    S.promptAudio = new Audio();
+    // ## 新增：設定提示語音的音量 (0.0 到 1.0) ##
+    S.promptAudio.volume = 0.8; // 設定為 50% 音量
+
+    await loadVoicePrompts();
+
     els.userId.value = localStorage.getItem('lastUserId') || '';
     try{ await startPreview(); }catch(e){
       alert('請允許相機與麥克風以開始預覽：\n'+e.message); return;
     }
-    // `enumerateDevices` is now called inside `startPreview`
     setVadStatus('hidden');
   })();
 })();

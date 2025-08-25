@@ -36,13 +36,11 @@ body {
   flex-direction: column;
 }
 
-/* [核心修改 1]
- * 讓 <main id="app"> 成為一個能填滿 body 的 Flex 容器 */
 main#app {
-  flex: 1; /* 讓 app 元素自動成長，填滿 body 的所有剩餘空間 */
+  flex: 1; 
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 關鍵：允許子元素在空間不足時正確縮小，而不是溢出 */
+  min-height: 0; 
 }
 
 
@@ -50,24 +48,24 @@ main#app {
  * 頁面與卡片結構
  * ================================== */
 .page {
-  display: none; /* 預設隱藏 */
+  display: none; 
   padding: 8px 12px 16px;
 }
 
 .page.active {
-  flex: 1; /* 讓當前頁面填滿 #app 的剩餘空間 */
+  flex: 1; 
   display: flex;
   flex-direction: column;
-  gap: 8px; /* 在子元素之間增加一點間距 */
+  gap: 8px; 
   min-height: 0;
 }
 
 .title {
   font-size: 26px;
   font-weight: 600;
-  margin: 0; /* 移除預設 margin，由父層 gap 管理 */
+  margin: 0; 
   padding: 8px 0;
-  flex-shrink: 0; /* 不讓標題被壓縮 */
+  flex-shrink: 0; 
 }
 
 .card {
@@ -82,37 +80,34 @@ main#app {
  * 設定頁 (#setup) 專用樣式
  * ================================== */
 .grid {
-  flex: 1; /* 讓 grid 填滿頁面空間 */
+  flex: 1; 
   display: grid;
   grid-template-columns: 360px 1fr;
-  grid-template-rows: 1fr; /* 讓唯一的橫列填滿所有垂直高度 */
+  grid-template-rows: 1fr; 
   gap: 16px;
   min-height: 0;
 }
 
-/* [核心修改 2]
- * 讓表單和預覽區塊能正確處理內容溢出 */
 .grid .form {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow-y: auto; /* 如果表單內容過多，在此區塊內部產生捲動條 */
+  overflow-y: auto; 
 }
 
 .grid .preview {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 移除固定的 min-height，讓它由 grid 的 1fr 控制 */
   min-height: 0;
 }
 
 #preview {
   width: 100%;
-  height: 100%; /* 讓影像填滿可用空間 */
+  height: 100%; 
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain; /* 保持影像比例，完整顯示 */
+  object-fit: contain; 
   border-radius: 8px;
   background: #000;
 }
@@ -130,10 +125,12 @@ main#app {
 }
 
 .videoCard {
-  flex: 1; /* 讓影片卡片填滿中間的主要空間 */
+  flex: 1; 
   min-height: 0;
   padding: 0;
   display: flex;
+  position: relative;
+  overflow: hidden;
 }
 
 .videoWrap {
@@ -147,11 +144,11 @@ main#app {
 #qVideo {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* 確保影片比例正確，不會被裁切 */
+  object-fit: contain; 
 }
 
 .bottomBar {
-  flex-shrink: 0; /* 不讓底部按鈕列被壓縮 */
+  flex-shrink: 0; 
 }
 
 .finish.hidden {
@@ -166,6 +163,25 @@ main#app {
   padding: 8px;
   background: rgba(0,0,0,0.2);
   border-radius: 8px;
+}
+
+/* ## 修改：護理師提示圖片樣式 ## */
+#nursePrompt {
+  position: absolute;
+  bottom: 0;
+  right: 0; /* 最終對齊右下角 */
+  height: 85%; 
+  width: auto; 
+  pointer-events: none;
+  
+  /* 初始狀態：從畫面右側外開始 */
+  transform: translateX(100%);
+  transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+#nursePrompt.visible {
+  /* 可見狀態：移動到最終位置 (右下角) */
+  transform: translateX(0);
 }
 
 
@@ -217,7 +233,7 @@ button:hover:not(:disabled) {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-top: auto; /* 將按鈕推到底部 */
+  margin-top: auto; 
   padding-top: 16px;
 }
 
