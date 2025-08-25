@@ -46,3 +46,34 @@
 
 ![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/change-to-dark-mode_setting_page.png)
 ![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/change-to-dark-mode_question_page.png)
+
+### 20250825 增加語音提示功能
+
+1.語音提示與護士圖片顯示
+![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/add_voice_prompt_function.png)
+
+2.更改 應回答時間(wait => answer_time) 與 思考時間(think_time) 變數名稱
+
+應回答時間 為該題需要回答的時間(單位為秒)
+
+思考時間 為該題超過設定時間就播放語音提示(單位為秒)
+
+```html
+  # index.html
+  <script id="manifest-inline" type="application/json">
+  {
+    "intro": {
+      "video": "quiz/intro/video.mp4",
+      "text": "擔心癌症復發，在癌症病友上是非常常見的現象，他不只影響癌友本人，也會影響家庭，或影響每天的生活。"
+    },
+    "questions": [
+      { "id": 1, "video": "quiz/1/video.mp4", "text": "請你用兩分鐘簡單描述一下你最近的生活，最近都在做些什麼？", "answer_time": 5 ,"think_time": 10},
+      { "id": 2, "video": "quiz/2/video.mp4", "text": "請問你會擔心癌症復發嗎？一分不會、十分非常嚴重，你覺得你有幾分？"d, "answer_time": 5 ,"think_time": 10},
+      { "id": 3, "video": "quiz/3/video.mp4", "text": "你多常想到復發這件事？", "answer_time": 5 ,"think_time": 10},
+      { "id": 4, "video": "quiz/4/video.mp4", "text": "你想到的時候感覺如何？想到時會影響日常生活嗎？生活中有哪些狀況會讓你擔心？", "answer_time": 5 ,"think_time": 10},
+      { "id": 5, "video": "quiz/5/video.mp4", "text": "有其他家人可以幫助你嗎？有其他人可以幫助你嗎？醫療團隊可以如何幫助你呢？你希望醫療團隊可以提供哪些幫忙？", "answer_time": 5 ,"think_time": 10},
+      { "id": 6, "video": "quiz/6/video.mp4", "text": "你擔心的時候通常會如何處理？通常怎麼做對你有幫助，或哪些是沒有幫助？", "answer_time": 5 ,"think_time": 10}
+    ]
+  }
+  </script>
+```
