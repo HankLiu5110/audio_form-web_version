@@ -67,10 +67,13 @@
 3. **狀態提示**
 
       - **未達標**：回答時間未達標時，提示「請再多回答一點」。
+
 ![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/%E8%AB%8B%E5%86%8D%E5%9B%9E%E7%AD%94%E4%B8%80%E9%BB%9E.png)
       - **回答中**：偵測到使用者正在說話時，提示「回答中...」。
+
 ![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/%E5%9B%9E%E7%AD%94%E4%B8%AD.png)
       - **已達標**：回答時間達到標準後，提示「若回答完畢可以進行下一題」，並啟用「下一題」按鈕。
+
 ![image](https://github.com/HankLiu5110/audio_form-web_version/blob/master/image/%E8%8B%A5%E5%9B%9E%E7%AD%94%E5%AE%8C%E7%95%A2%E5%8F%AF%E4%BB%A5%E9%80%B2%E8%A1%8C%E4%B8%8B%E4%B8%80%E9%A1%8C.png)
 
 
