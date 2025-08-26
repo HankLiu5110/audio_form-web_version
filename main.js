@@ -150,31 +150,14 @@
   }
   
   // ---------- 語音提示功能 ----------
-  async function loadVoicePrompts() {
-    const NUM_PROMPTS = 6;
-    const promises = [];
-    for (let i = 1; i <= NUM_PROMPTS; i++) {
-      const audioPath = `./voice_prompts/voice_prompt${i}.wav`;
-      const textPath = `./voice_prompts/voice_prompt${i}.txt`;
-      
-      const textPromise = fetch(textPath)
-        .then(res => {
-          if (!res.ok) throw new Error(`無法載入 ${textPath}`);
-          return res.text();
-        })
-        .then(text => ({ audio: audioPath, text: text.trim() }))
-        .catch(err => {
-          console.warn(err.message);
-          return null;
-        });
-      promises.push(textPromise);
-    }
-    
-    const results = await Promise.all(promises);
-    S.voicePrompts = results.filter(p => p !== null);
-    
-    if (S.voicePrompts.length === 0) {
-        console.warn("沒有成功載入任何語音提示檔，此功能將被停用。");
+
+  // ## MODIFIED: 修改此函數，不再使用 fetch ##
+  function loadVoicePrompts() {
+    if (window.VOICE_PROMPTS && Array.isArray(window.VOICE_PROMPTS)) {
+      S.voicePrompts = window.VOICE_PROMPTS;
+    } else {
+      console.warn("找不到或語音提示資料格式不符，此功能將被停用。");
+      S.voicePrompts = [];
     }
   }
 
@@ -480,10 +463,10 @@
   // ---------- 初始化 ----------
   (async function init(){
     S.promptAudio = new Audio();
-    // ## 新增：設定提示語音的音量 (0.0 到 1.0) ##
-    S.promptAudio.volume = 0.8; // 設定為 50% 音量
+    S.promptAudio.volume = 0.5;
 
-    await loadVoicePrompts();
+    // ## MODIFIED: 移除 await，因為函數不再是異步 ##
+    loadVoicePrompts();
 
     els.userId.value = localStorage.getItem('lastUserId') || '';
     try{ await startPreview(); }catch(e){

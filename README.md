@@ -5,6 +5,7 @@
 - [擔心癌症復發問卷-網頁版](#擔心癌症復發問卷-網頁版)
   - [目錄](#目錄)
   - [修改紀錄](#修改紀錄)
+    - [20250826 修改語音提示功能](#20250826-修改語音提示功能)
     - [20250825 增加語音提示功能](#20250825-增加語音提示功能)
     - [20250820 設定黑色介面](#20250820-設定黑色介面)
     - [20250820 增加VAD功能(語音活動偵測)](#20250820-增加vad功能語音活動偵測)
@@ -13,6 +14,24 @@
 -----
 
 ## 修改紀錄
+
+### 20250826 修改語音提示功能
+
+更新讀取語音提示文字存取方式(index.html)，改成直接將文字寫進index.html中，避開windows檔案讀取限制。
+
+```html
+<script id="voice-prompts-inline">
+    window.VOICE_PROMPTS = [
+      { "audio": "./voice_prompts/voice_prompt1.wav", "text": "還有什麼想要表達的呢？" },
+      { "audio": "./voice_prompts/voice_prompt2.wav", "text": "再想想看，可以多說一點。" },
+      { "audio": "./voice_prompts/voice_prompt3.wav", "text": "多講些，可以讓張醫師更了解你喔！" },
+      { "audio": "./voice_prompts/voice_prompt4.wav", "text": "還有嗎？請多談一些你的感受。" },
+      { "audio": "./voice_prompts/voice_prompt5.wav", "text": "可以盡量多表達一些當時的情況喔！" },
+      { "audio": "./voice_prompts/voice_prompt6.wav", "text": "還有嗎？可以多講一些你的想法。" }
+    ];
+  </script>
+
+```
 
 ### 20250825 增加語音提示功能
 
